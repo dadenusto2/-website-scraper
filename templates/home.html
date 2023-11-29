@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+</head>
+<body>
+{% for post in records %}
+    <h2>{{post[0]}}</h2>
+    <p>Автор: <b>{{post[1]}}</b></p>
+    <p>Анотация: {{post[2]}}</p>
+    <h3>Текст статьи:</h3>
+    <p>{{post[3]}}</p>
+    <p>Тэги: {{post[4]}}</p>
+    {% endfor %}
+</body>
+</html>
