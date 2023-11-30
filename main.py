@@ -16,13 +16,14 @@ page = requests.get(url)
 soup = BeautifulSoup(page.text, "html.parser")
 
 pages = soup.find_all('a', class_='gs_nma')
-print('GOOGLE', soup)
+print('Google')
 for page in pages:
     url = f"https://scholar.google.com/scholar?start={int(page.text)*10-10}&q=электрозарядные+станции&hl=ru&as_sdt=0,5"
 
-    page = requests.get(url)
+    page_soap = requests.get(url)
 
-    soup = BeautifulSoup(page.text, "html.parser")
+    soup = BeautifulSoup(page_soap.text, "html.parser")
+    status = int(page.text)*10-10 < len(pages)/2
     for article in soup.find_all('div', class_='gs_ri'):
         info = BeautifulSoup(article.text, "html.parser")
         # print(article)
@@ -32,15 +33,16 @@ for page in pages:
         title = title_block.text[:title_block.text.find("…")]
         # print(title)
         print(title_block.get('href'))
-        if title_block.get('href').find('https://cyberleninka.ru/')>=0:
-            elibrary_req = requests.get(title_block.get('href'))
-            elibrary_soup = BeautifulSoup(elibrary_req.text, "html.parser")
-            print(elibrary_soup.text)
-        # values.append((title,
-        #                author,
-        #                title_block.get('href'),
-        #                '',
-        #                ''))
+        # if title_block.get('href').find('https://cyberleninka.ru/')>=0:
+        #     elibrary_req = requests.get(title_block.get('href'))
+        #     elibrary_soup = BeautifulSoup(elibrary_req.text, "html.parser")
+        #     print(elibrary_soup.text)
+        values.append((title,
+                       author,
+                       title_block.get('href'),
+                       '',
+                       '',
+                       status))
 
 habr = 'https://habr.com/ru/search/?q=ЭЗС&target_type=posts&order=relevance'
 
@@ -56,6 +58,7 @@ new_pages_habr = [1]
 print('HABR')
 for page_habr in pages_habr:
     new_pages_habr.append(int(page_habr.text))
+page_mid=int((new_pages_habr[len(new_pages_habr)-2]+1)/2)
 for page_habr in new_pages_habr:
     new_link = f"https://habr.com/ru/search/page{page_habr}/?q=ЭЗС&target_type=posts&order=date"
     new_page_habr = requests.get(new_link)
@@ -76,6 +79,7 @@ for page_habr in new_pages_habr:
         text = page_soup.find('div', class_='article-formatted-body').text
         # Теги
         tags = ''
+        status = page_habr <= page_mid
         tags_soup = page_soup.findAll('a', class_='tm-tags-list__link')
         for tag_soup in tags_soup:
             tags = tags + ' ' + tag_soup.text
@@ -83,14 +87,16 @@ for page_habr in new_pages_habr:
                         author,
                        '',
                     text,
-                    tags))
+                    tags,
+                        status))
 
 vc = 'https://vc.ru/search/v2/content/new?query=ЭЗС'
 page_vc = requests.get(vc)
 soup_vc = BeautifulSoup(page_vc.text, "html.parser")
 pages = soup_vc.find_all('div', class_='content-feed')
-
-print('VC')
+page_mid = int(len(pages)/2)
+print('VC',int(len(pages)/2) )
+i = 0
 for page in pages:
     title = page.find('div', class_='content-title').text
     print(title)
@@ -104,6 +110,9 @@ for page in pages:
     article_soap = BeautifulSoup(article_req.text, "html.parser")
     anotation = ''
     text = ''
+    status = i < page_mid
+    print(status)
+    i = i+1
     texts_block = article_soap.findAll('div', class_='l-island-a')
     for text_bloc in texts_block:
         if text_bloc.find('p') is not None:
@@ -115,10 +124,11 @@ for page in pages:
                    re.sub(r"( +){2,}", '', author),
                    re.sub(r"( +){2,}", '', anotation),
                    re.sub(r"( +){2,}", '', text),
-                   re.sub(r"( +){2,}", '', tags)))
+                   re.sub(r"( +){2,}", '', tags),
+                   status))
 with conn.cursor() as cursor:
     conn.autocommit = True
 
-    insert = sql.SQL('insert into articles (title, authors, anatation, text, tags) VALUES {}').format(
+    insert = sql.SQL('insert into articles (title, authors, anatation, text, tags, status) VALUES {}').format(
         sql.SQL(',').join(map(sql.Literal, values)))
     cursor.execute(insert)
