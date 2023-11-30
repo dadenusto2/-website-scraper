@@ -60,7 +60,7 @@ for page_habr in pages_habr:
     new_pages_habr.append(int(page_habr.text))
 page_mid=int((new_pages_habr[len(new_pages_habr)-2]+1)/2)
 for page_habr in new_pages_habr:
-    new_link = f"https://habr.com/ru/search/page{page_habr}/?q=ЭЗС&target_type=posts&order=date"
+    new_link = f"https://habr.com/ru/search/page{page_habr}/?q=ЭЗС&target_type=posts"
     new_page_habr = requests.get(new_link)
     new_soup_habr = BeautifulSoup(new_page_habr.text, "html.parser")
     # Теперь воспользуемся функцией поиска в BeautifulSoup4:

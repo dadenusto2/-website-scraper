@@ -50,7 +50,8 @@ def tokenize(x):
     tokenizer = RegexpTokenizer(r'\w+')
     return tokenizer.tokenize(x)
 
-df['tokens'] = df['title'].map(tokenize)
+search_field = 'tags'
+df['tokens'] = df[search_field].map(tokenize)
 
 
 def stemmer(x):
@@ -63,23 +64,18 @@ def lemmatize(x):
     return ' '.join([lemmatizer.lemmatize(word) for word in x])
 
 
-df['authors'] = df['tokens'].map(lemmatize)
+df[search_field] = df['tokens'].map(lemmatize)
 df['tags'] = df['tokens'].map(stemmer)
 
-X = df['title']
-print(len(X))
-y = []
-for i in range(27):
-    y.append(1)
-for i in range(27):
-    y.append(0)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 13)
+X = df[search_field]
+y = df['status']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
 
 pipe_mnnb = Pipeline(steps = [('tf', TfidfVectorizer()), ('mnnb', MultinomialNB())])
 
 pgrid_mnnb = {
  'tf__max_features' : [1000, 2000, 3000],
- 'tf__stop_words' : ['Подписаться', None],
+ # 'tf__stop_words' : None,
  'tf__ngram_range' : [(1,1),(1,2)],
  'tf__use_idf' : [True, False],
  'mnnb__alpha' : [0.1, 0.5, 1]
@@ -95,7 +91,6 @@ gs_mnnb.best_params_
 
 preds_mnnb = gs_mnnb.predict(X)
 df['preds'] = preds_mnnb
-print(y_test)
 
-conf_mnnb = confusion_matrix(y_test, preds_mnnb)
-conf_mnnb
+conf_mnnb = confusion_matrix(y_test, preds_mnnb[0:len(y_test)])
+print(conf_mnnb)
